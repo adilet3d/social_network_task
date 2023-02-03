@@ -15,13 +15,14 @@ class User(models.Model):
         verbose_name_plural='Пользователи'
 
 class Post (models.Model):
-    user=models.OneToOneField(User, on_delete=models.CASCADE,related_name='Пост')
+    user=models.ForeignKey(User, on_delete=models.CASCADE,related_name='Пост')
     text= models.CharField(max_length=120, verbose_name='Текст')
     image=models.ImageField(upload_to="image/",null=True,blank=True)
     create_at=models.DateField( auto_now=True, verbose_name='Дата создания')
 
     def __str__(self) -> str:
-        return self.user
+        return self.text
+        
     
     class Meta:
         verbose_name="Пост"

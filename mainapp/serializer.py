@@ -13,11 +13,9 @@ class PostSerializer(serializers.Serializer):
     class Meta:
         model=Post
         fields=(
-            'id','text','image','create_at',
+            'id','text','image','create_at','user',
         )
-        read_only_field=(
-            'user',
-        )
+        
 
 
 class RegistrationSerializer(serializers.Serializer):

@@ -20,11 +20,30 @@ from rest_framework.decorators import action
 class UserView(ModelViewSet):
     queryset=User.objects.all()
     serializer_class=UserSerializer
+    
+    @action(methods=['post',],detail=True,\
+        serializer_class=PostSerializer, permission_classes=\
+            (permissions.IsAuthenticatedOrReadOnly))
+    def add_post(self, request,*args , **kwargs):
+        user=self.get_object()
+        serializer= PostSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data=serializer.validated_data
+        post=Post.objects.create(
+            user=user,
+            text=data.get('text'),
+            image=data.get('image'),
+            create_at=data.get('create_at'),
+        )
+        return Response(PostSerializer(post).data)
+
+        
 
 
 class PostView(ModelViewSet):
     queryset=Post.objects.all()
     serializer_class=PostSerializer
+    
 
 
 
@@ -44,7 +63,6 @@ class RegistrationView(APIView):
             username=username,
             email=email,
             password=password
-
         )
         token=Token.objects.create(user=user)
         return Response({'token':token.key})
