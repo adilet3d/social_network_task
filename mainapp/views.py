@@ -1,20 +1,18 @@
 from django.shortcuts import render
-from django_filters.rest_framework import DjangoFilterBackend
-from mainapp.models import User,Post
+from rest_framework.generics import ListAPIView
+from mainapp.models import User,Post,Like,DisLikes
 from mainapp.serializer import (
-    UserSerializer,PostSerializer,AuthorizationSerializer,\
-        RegistrationSerializer
+    UserSerializer,PostSerializer,LikeSerializer,DisLikesSerializer
 )
-from django.contrib.auth import get_user_model
-User=get_user_model()
-from django.contrib.auth.hashers import check_password
+from mainapp.mixin import LikeMixins , DisLikeMixins
+from django_filters import rest_framework as filters
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.response import Response
-from rest_framework.authtoken.models import Token
 from rest_framework import permissions
 from rest_framework.decorators import action
 
+# from mainapp.filters import DateLikesFilter, DateDisLikesFilter
 
 
 class UserView(ModelViewSet):
@@ -23,65 +21,70 @@ class UserView(ModelViewSet):
     
     @action(methods=['post',],detail=True,\
         serializer_class=PostSerializer, permission_classes=\
-            (permissions.IsAuthenticatedOrReadOnly))
+            (permissions.IsAuthenticated,))
     def add_post(self, request,*args , **kwargs):
-        user=self.get_object()
+        user=request.user
         serializer= PostSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data=serializer.validated_data
         post=Post.objects.create(
-            user=user,
+            owner=user,
             text=data.get('text'),
             image=data.get('image'),
-            create_at=data.get('create_at'),
         )
         return Response(PostSerializer(post).data)
 
         
 
 
-class PostView(ModelViewSet):
+class PostView(DisLikeMixins,LikeMixins,ModelViewSet):
     queryset=Post.objects.all()
     serializer_class=PostSerializer
     
-
-
-
-class RegistrationView(APIView):
-    def post(self,request):
-        serializer= RegistrationSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        data=serializer.validated_data
-
-
-        username= data.get('username')
-        email=data.get('email')
-        password=data.get('password')
-        if User.objects.filter(username=username).exists():
-            return Response({'message':'User with such name is already exists'})
-        user= User.objects.create_user(
-            username=username,
-            email=email,
-            password=password
-        )
-        token=Token.objects.create(user=user)
-        return Response({'token':token.key})
-
-class AuthorizationView(APIView):
-    def post(self, requset):
-        serializer=AuthorizationSerializer
-        serializer.is_valid(raise_exception=True)
-        data=serializer.validated_data
+    # @action(methods=['post',],detail=True,\
+    #     serializer_class=LikeSerializer, permission_classes=\
+    #         (permissions.IsAuthenticated,))
+    # def add_like(self, request, *args, **kwargs):
+    #     user=request.user
+    #     post=self.get_object()
         
+    #     serializer=LikeSerializer(data=request.data)
+    #     serializer.is_valid(raise_exception=True)
+    #     data=serializer.validated_data
+    #     like= Like.objects.create(
+    #         author=user,
+    #         post=post
+    #     )
+    #     return Response(LikeSerializer(like).data)
+
+
+    # @action(methods=['post',],detail=True,\
+    #     serializer_class=DisLikesSerializer, permission_classes=\
+    #         (permissions.IsAuthenticated,))
+    # def add_dislike(self, request,*args,**kwaargs):
+    #     user=request.user
+    #     post=self.get_object()
         
-        username=data.get('username')
-        password=data.get('password')
-        user= User.objects.filter(username=username).first()
-        
-        if user is not None:
-            if check_password(password, user.password):
-                token,_=Token.objects.get_or_create(user=user)
-                return Response({'token:':token.key})
-            return Response ({'error':'Password is not valid'}, status=400)
-        return Response({'error':'This username is not registred'},status=400)
+    #     serializer=DisLikesSerializer(data=request.data)
+    #     serializer.is_valid(raise_exception=True)
+    #     data=serializer.validated_data
+    #     dislike= DisLikes.objects.create(
+    #         author=user,
+    #         post=post
+    #     )
+    #     return Response(DisLikesSerializer(dislike).data)
+            
+
+
+
+class LikesModelViewSet(ListAPIView):
+    queryset = Like.objects.all()
+    serializer_class = LikeSerializer
+    
+   
+class DisLikesModelViewSet(ListAPIView):
+    queryset = DisLikes.objects.all()
+    serializer_class = DisLikesSerializer
+  
+
 

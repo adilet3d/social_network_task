@@ -1,35 +1,41 @@
 from rest_framework import serializers,exceptions
-from mainapp.models import User,Post
+from mainapp.models import User,Post,Like,DisLikes
 
-class UserSerializer(serializers.Serializer):
+class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model=User
         fields=(
-            'id','name','second_name','date_of_birth','country',
-        )
+            'id','username','password',
+            )
 
-class PostSerializer(serializers.Serializer):
-    user= UserSerializer
+
+class PostSerializer(serializers.ModelSerializer):
+    # user= UserSerializer()
     class Meta:
         model=Post
         fields=(
-            'id','text','image','create_at','user',
+            'id','owner','text','image','create_at','like','dislike',
         )
         
+class LikeSerializer(serializers.ModelSerializer):
+
+    post = serializers.ReadOnlyField(source='post.title')
+    author = serializers.ReadOnlyField(source='author.username')
+
+    class Meta:
+
+        model = Like
+        fields = ['id', 'post', 'author', 'created_at', ]
+        read_only_fields = ['created_at', ]
 
 
-class RegistrationSerializer(serializers.Serializer):
-    username= serializers.CharField()
-    password= serializers.CharField()
-    email= serializers.CharField()
-    def validate_password(self,value):
-        if len(value) <8:
-            raise exceptions.ValidationError('Password is too short')
-        elif len (value) >24:
-            raise exceptions.ValidationError ('Password is too long')
-        return value
+class DisLikesSerializer(serializers.ModelSerializer):
+    
+    post = serializers.ReadOnlyField(source='post.title')
+    author = serializers.ReadOnlyField(source='author.username')
 
+    class Meta:
 
-class AuthorizationSerializer(serializers.Serializer):
-    username= serializers.CharField()
-    password= serializers.CharField()
+        model = DisLikes
+        fields = ['id', 'post', 'author', 'created_at', ]
+        read_only_fields = ['created_at', ]
